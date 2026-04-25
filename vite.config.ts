@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'icons/icon.svg'],
+      includeAssets: ['favicon.ico', 'logo.png'],
       manifest: {
         name: 'Vian Maps',
         short_name: 'Vian',
@@ -20,9 +20,9 @@ export default defineConfig({
         orientation: 'portrait',
         icons: [
           {
-            src: 'icons/icon.svg',
-            sizes: '512x512',
-            type: 'image/svg+xml',
+            src: 'logo.png',
+            sizes: '1024x1024',
+            type: 'image/png',
             purpose: 'any maskable'
           }
         ]
