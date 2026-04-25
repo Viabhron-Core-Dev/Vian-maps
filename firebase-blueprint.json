@@ -1,0 +1,46 @@
+{
+  "entities": {
+    "bookmark": {
+      "title": "Bookmark",
+      "description": "A tactical marker, waypoint, or saved route",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Display name of the marker" },
+        "lat": { "type": "number", "description": "Latitude coordinate" },
+        "lng": { "type": "number", "description": "Longitude coordinate" },
+        "category": { 
+          "type": "string", 
+          "enum": ["favorite", "waypoint", "warning", "other", "route"],
+          "description": "Tactical classification"
+        },
+        "icon": { "type": "string", "description": "Lucide icon name" },
+        "tags": { "type": "string", "description": "Comma-separated tactical tags" },
+        "note": { "type": "string", "description": "Intelligence notes" },
+        "savedAt": { "type": "number", "description": "Unix timestamp" },
+        "data": { "type": "object", "description": "Additional spatial data (e.g. route path)" }
+      },
+      "required": ["name", "lat", "lng", "category", "savedAt"]
+    },
+    "mission_config": {
+      "title": "Mission Config",
+      "description": "Active operational parameters",
+      "type": "object",
+      "properties": {
+        "activeLayerId": { "type": "string" },
+        "isOnline": { "type": "boolean" },
+        "positionMode": { "type": "string", "enum": ["gps", "location"] },
+        "performanceMode": { "type": "string", "enum": ["high", "low"], "description": "Toggle heavy animations and effects" }
+      }
+    }
+  },
+  "firestore": {
+    "bookmarks": {
+      "schema": "bookmark",
+      "description": "Collection of tactical intel markers"
+    },
+    "missions/{missionId}": {
+      "schema": "mission_config",
+      "description": "Operational mission state"
+    }
+  }
+}

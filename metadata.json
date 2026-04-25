@@ -1,0 +1,9 @@
+{
+  "name": "Vian Maps",
+  "description": "Professional offline cartography app rebuilt with React/TypeScript. Features precision GPS tracking, robust multi-layer tile caching (OSM/Google), high-res exports, and custom coordinate overlays.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ],
+  "majorCapabilities": []
+}
