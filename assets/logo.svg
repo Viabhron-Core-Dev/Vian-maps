@@ -1,0 +1,48 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Professional Background -->
+  <rect width="1024" height="1024" rx="200" fill="#0A1525"/>
+  
+  <!-- Subtle Map Grid -->
+  <g opacity="0.1">
+    <path d="M0 128H1024M0 256H1024M0 384H1024M0 512H1024M0 640H1024M0 768H1024M0 896H1024" stroke="#4F46E5" stroke-width="2"/>
+    <path d="M128 0V1024M256 0V1024M384 0V1024M512 0V1024M640 0V1024M768 0V1024M896 0V1024" stroke="#4F46E5" stroke-width="2"/>
+  </g>
+
+  <!-- Glowing Effect -->
+  <defs>
+    <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="512" cy="512" r="400" fill="url(#glowGrad)"/>
+
+  <!-- The Vian Maps Diamond Plumbob -->
+  <!-- Outer glowing stroke -->
+  <path d="M512 80 L902 512 L512 944 L122 512 Z" stroke="#38BDF8" stroke-width="4" opacity="0.3"/>
+  
+  <!-- Main shape -->
+  <path d="M512 100 L862 512 L512 924 L162 512 Z" fill="#0EA5E9" fill-opacity="0.9" stroke="#E0F2FE" stroke-width="14" stroke-linejoin="round"/>
+  
+  <!-- Internal structural lines (Diamond Grid) -->
+  <path d="M512 100 V924" stroke="#E0F2FE" stroke-width="6" opacity="0.9"/>
+  <path d="M162 512 H862" stroke="#E0F2FE" stroke-width="6" opacity="0.9"/>
+  
+  <!-- Secondary internal lines -->
+  <path d="M337 306 L687 718" stroke="#E0F2FE" stroke-width="3" opacity="0.7"/>
+  <path d="M687 306 L337 718" stroke="#E0F2FE" stroke-width="3" opacity="0.7"/>
+  
+  <!-- Center Star -->
+  <path d="M512 400 L535 512 L512 624 L489 512 Z" fill="white"/>
+  <path d="M400 512 L512 535 L624 512 L512 489 Z" fill="white"/>
+  <circle cx="512" cy="512" r="12" fill="#0EA5E9"/>
+
+  <!-- Bright Nodes -->
+  <circle cx="512" cy="100" r="18" fill="white"/>
+  <circle cx="512" cy="924" r="18" fill="white"/>
+  <circle cx="162" cy="512" r="18" fill="white"/>
+  <circle cx="862" cy="512" r="18" fill="white"/>
+  
+  <!-- Pulsing center node (Visual representation) -->
+  <circle cx="512" cy="512" r="30" fill="white" opacity="0.4"/>
+</svg>

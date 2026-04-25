@@ -47,6 +47,9 @@ jobs:
             echo "Android project already exists. Syncing..."
           fi
           
+          echo "Generating app assets..."
+          npx @capacitor/assets generate --android
+          
           node patch-android-permissions.js
           npx cap sync android
 
