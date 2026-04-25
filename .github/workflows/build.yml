@@ -18,7 +18,7 @@ jobs:
           node-version: 20
 
       - name: Install Dependencies
-        run: npm install --legacy-peer-deps
+        run: npm install --legacy-peer-deps --force
 
       - name: Build Web App
         run: npm run build
@@ -26,18 +26,32 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Accept Android Licenses
+        run: yes | sdkmanager --licenses || true
+
       - name: Initial Android Project
         run: |
+          echo "Checking for android directory..."
           if [ ! -d "android" ]; then
+            echo "Creating android project..."
             npx cap add android
+          else
+            echo "Android project already exists."
           fi
+          
+          echo "Running initial sync..."
+          npx cap sync android
+          
+          echo "Patching permissions..."
           node patch-android-permissions.js
+          
+          echo "Final sync..."
           npx cap sync android
 
       - name: Build APK (Assemble Debug)
