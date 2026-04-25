@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MapComponent from './components/MapComponent';
 import Panel from './components/UI/Panel';
 import { Layers, Navigation, Bookmark, Wrench, Settings, Search, Map as MapIcon, Signal, SignalLow, Ruler, Zap, Menu, X, Download, Eraser, Hash, Circle, Compass, Plus, Minus, Cloud, CloudOff, Wifi, WifiOff, Locate, LocateFixed, LocateOff, Trash2, RefreshCw, Activity, Share2 } from 'lucide-react';
+import { App as CapApp } from '@capacitor/app';
 import { useConfigStore, useGPSStore, useMapStore } from './lib/store';
 import { MAP_LAYERS, OfflineTileLayer } from './lib/OfflineLayer';
 import { toDMS, getMapScaleLabel, getMetersPerPixel } from './lib/utils';
@@ -56,7 +57,7 @@ const App: React.FC = () => {
   const [isSensorDashboardOpen, setSensorDashboardOpen] = useState(false);
 
   useEffect(() => {
-    // Handle Shared Coordinates (Deep Linking)
+    // Handle Shared Coordinates (PWA Deep Linking)
     const params = new URLSearchParams(window.location.search);
     const lat = parseFloat(params.get('lat') || '');
     const lng = parseFloat(params.get('lng') || '');
@@ -64,8 +65,27 @@ const App: React.FC = () => {
 
     if (!isNaN(lat) && !isNaN(lng) && map) {
       map.setView([lat, lng], zoom);
-      // Optional: Add a temporary marker or highlight?
     }
+
+    // Handle Native Deep Linking
+    const handleAppUrlOpen = (data: any) => {
+      try {
+        const url = new URL(data.url);
+        const params = url.searchParams;
+        const lat = parseFloat(params.get('lat') || '');
+        const lng = parseFloat(params.get('lng') || '');
+        const zoom = parseInt(params.get('z') || '15', 10);
+
+        if (!isNaN(lat) && !isNaN(lng) && map) {
+          map.setView([lat, lng], zoom);
+        }
+      } catch (e) {
+        console.error('Deep link failed:', e);
+      }
+    };
+
+    CapApp.addListener('appUrlOpen', handleAppUrlOpen);
+    return () => { CapApp.removeAllListeners(); };
   }, [map]);
 
   const handleManualRefresh = () => {

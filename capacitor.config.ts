@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.vianmaps.app',
-  appName: 'Vian Maps Tactical',
+  appId: 'com.schuyler.vianmaps',
+  appName: 'Vian Maps',
   webDir: 'dist',
   server: {
     androidScheme: 'https'

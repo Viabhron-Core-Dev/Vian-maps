@@ -9,30 +9,20 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['favicon.ico', 'icons/icon.svg'],
       manifest: {
-        name: 'Vian Maps Tactical',
-        short_name: 'VianMaps',
-        description: 'Tactical Offline Navigation and Spatial Intelligence',
-        theme_color: '#09090b',
-        background_color: '#09090b',
+        name: 'Vian Maps',
+        short_name: 'Vian',
+        description: 'Offline-capable map viewer with GPS, tile caching, measurement and overlay tools',
+        theme_color: '#3b82f6',
+        background_color: '#121212',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
           {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
+            src: 'icons/icon.svg',
             sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
+            type: 'image/svg+xml',
             purpose: 'any maskable'
           }
         ]

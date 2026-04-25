@@ -18,7 +18,7 @@ jobs:
           node-version: 20
 
       - name: Install Dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Build Web App
         run: npm run build
@@ -32,14 +32,12 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Capacitor Sync
-        run: npx cap sync
-
-      - name: Initial Android Build
+      - name: Initial Android Project
         run: |
           if [ ! -d "android" ]; then
             npx cap add android
           fi
+          node patch-android-permissions.js
           npx cap sync android
 
       - name: Build APK (Assemble Debug)
