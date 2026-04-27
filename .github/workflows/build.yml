@@ -47,8 +47,14 @@ jobs:
             echo "Android project already exists. Syncing..."
           fi
           
+          # Debug: List generated directory to verify structure
+          ls -R android | head -n 20
+          
           echo "Generating app assets..."
-          npx @capacitor/assets generate --android || true
+          # Ensure assets exist before generation
+          if [ -f "assets/icon.png" ]; then
+            npx @capacitor/assets generate --android || echo "Asset generation failed, continuing..."
+          fi
           
           node patch-android-permissions.js
           node patch-android-build.js
@@ -58,8 +64,10 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
+          # Verify Java version
           java -version
-          ./gradlew assembleDebug --no-daemon --stacktrace --info
+          # Run build
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
