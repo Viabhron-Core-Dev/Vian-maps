@@ -43,6 +43,7 @@ export const MAP_LAYERS: Record<string, LayerDefinition> = {
 export class OfflineTileLayer extends L.TileLayer {
   private cachePrefix: string;
   private isOnline: boolean = true;
+  private autoCache: boolean = true;
   private blobUrls: Map<string, string> = new Map();
 
   constructor(url: string, id: string, options: L.TileLayerOptions = {}) {
@@ -59,6 +60,10 @@ export class OfflineTileLayer extends L.TileLayer {
   setOnline(online: boolean) {
     this.isOnline = online;
     this.redraw();
+  }
+
+  setAutoCache(auto: boolean) {
+    this.autoCache = auto;
   }
 
   createTile(coords: L.Coords, done: L.DoneCallback): HTMLElement {
@@ -109,16 +114,20 @@ export class OfflineTileLayer extends L.TileLayer {
       } else if (this.isOnline) {
         const url = this.getTileUrl(coords);
         try {
-          // Attempt fetch for offline caching (requires CORS support)
-          const response = await fetch(url, { referrerPolicy: 'no-referrer' });
-          if (response.ok) {
-            const blob = await response.blob();
-            await db.tiles.put({ id: key, data: blob, timestamp: Date.now() });
-            const blobUrl = URL.createObjectURL(blob);
-            this.blobUrls.set(key, blobUrl);
-            tile.src = blobUrl;
+          // Attempt fetch for offline caching if autoCache is enabled
+          if (this.autoCache) {
+            const response = await fetch(url, { referrerPolicy: 'no-referrer' });
+            if (response.ok) {
+              const blob = await response.blob();
+              await db.tiles.put({ id: key, data: blob, timestamp: Date.now() });
+              const blobUrl = URL.createObjectURL(blob);
+              this.blobUrls.set(key, blobUrl);
+              tile.src = blobUrl;
+            } else {
+              tile.src = url;
+            }
           } else {
-            // Fallback to direct image source (no caching, but works with most providers)
+            // Direct load without caching
             tile.src = url;
           }
         } catch (fetchError) {

@@ -41,13 +41,14 @@ const LayerManager: React.FC = () => {
     });
     
     newLayer.setOnline(isOnline);
+    newLayer.setAutoCache(autoCache);
     newLayer.addTo(map);
     layerRef.current = newLayer;
 
     return () => {
       if (layerRef.current) map.removeLayer(layerRef.current);
     };
-  }, [activeLayerId, isOnline, map]);
+  }, [activeLayerId, isOnline, autoCache, map]);
 
   useEffect(() => {
     if (!autoCache || !layerRef.current) return;
@@ -56,8 +57,9 @@ const LayerManager: React.FC = () => {
       if (!layerRef.current) return;
       const bounds = map.getBounds();
       const zoom = map.getZoom();
-      // Harvest current zoom and the next 2 zoom levels for granular detail
-      layerRef.current.harvest(bounds, Math.max(0, zoom - 1), Math.min(20, zoom + 2));
+      // Harvest current zoom and the next zoom level for granular detail
+      // Reduced from zoom + 2 to zoom + 1 to save space
+      layerRef.current.harvest(bounds, Math.max(0, zoom - 1), Math.min(20, zoom + 1));
     };
 
     map.on('moveend', handleMoveEnd);
@@ -88,10 +90,10 @@ const GPSMarker: React.FC = () => {
       const icon = L.divIcon({
         className: 'gps-cursor',
         html: `<div class="relative w-8 h-10 unrotate flex items-center justify-center">
-                 {/* Shadow */}
+                 <!-- Shadow -->
                  <div class="absolute bottom-0 w-4 h-2 bg-black/20 blur-[2px] rounded-[100%] scale-x-150"></div>
                  
-                 {/* Sims Plumbob Diamond */}
+                 <!-- Sims Plumbob Diamond -->
                  <div class="relative w-6 h-10 animate-bounce-slow">
                    <svg viewBox="0 0 100 160" class="w-full h-full drop-shadow-lg">
                      <defs>
@@ -117,7 +119,7 @@ const GPSMarker: React.FC = () => {
                    <div id="gps-arrow" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0 h-0 border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-b-[6px] border-b-white/80 transition-transform duration-300"></div>
                  </div>
                  
-                 {/* Pulse */}
+                 <!-- Pulse -->
                  <div class="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-10 scale-50"></div>
                </div>`,
         iconSize: [32, 40],
@@ -378,15 +380,51 @@ const RefreshListener: React.FC = () => {
   return null;
 };
 
+const PersistenceHandler: React.FC = () => {
+  const map = useMap();
+
+  useEffect(() => {
+    const handleMoveEnd = () => {
+      const center = map.getCenter();
+      const zoom = map.getZoom();
+      localStorage.setItem('vian-maps-last-view', JSON.stringify({
+        lat: center.lat,
+        lng: center.lng,
+        zoom: zoom
+      }));
+    };
+
+    map.on('moveend', handleMoveEnd);
+    return () => {
+      map.off('moveend', handleMoveEnd);
+    };
+  }, [map]);
+
+  return null;
+};
+
 const MapComponent: React.FC = () => {
   const activeTool = useConfigStore(s => s.activeTool);
   const isEraser = activeTool === 'eraser';
 
+  const [initialView] = useState(() => {
+    const saved = localStorage.getItem('vian-maps-last-view');
+    if (saved) {
+      try {
+        const { lat, lng, zoom } = JSON.parse(saved);
+        return { center: [lat, lng] as [number, number], zoom };
+      } catch (e) {
+        console.error('Failed to parse saved view', e);
+      }
+    }
+    return { center: [51.505, -0.09] as [number, number], zoom: 13 };
+  });
+
   return (
     <div className={`tactical-map-viewport bg-zinc-100 dark:bg-zinc-950 ${isEraser ? 'eraser-mode-active' : ''}`}>
       <MapContainer
-        center={[51.505, -0.09]}
-        zoom={13}
+        center={initialView.center}
+        zoom={initialView.zoom}
         zoomControl={false}
         className="tactical-rotated-container"
         attributionControl={true}
@@ -403,6 +441,7 @@ const MapComponent: React.FC = () => {
         <LayerManager />
         <GPSMarker />
         <ContextActions />
+        <PersistenceHandler />
         <RotationHandler />
         <TacticalPanningHandler />
         <TagOverlay />

@@ -9,7 +9,43 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'logo.svg'],
+      includeAssets: ['logo.svg'],
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gstatic-fonts-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          }
+        ],
+      },
       manifest: {
         name: 'Vian Maps',
         short_name: 'Vian',

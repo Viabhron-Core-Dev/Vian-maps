@@ -64,6 +64,7 @@ interface ConfigState {
   selectedTiles: string[];
   performanceMode: 'high' | 'low';
   deepDelete: boolean;
+  isHudFolded: boolean;
   
   setActiveLayer: (id: string) => void;
   setOnline: (online: boolean) => void;
@@ -86,6 +87,7 @@ interface ConfigState {
   setSelectedTiles: (tiles: string[]) => void;
   setPerformanceMode: (mode: 'high' | 'low') => void;
   setDeepDelete: (deep: boolean) => void;
+  setHudFolded: (folded: boolean) => void;
 }
 
 export const useConfigStore = create<ConfigState>((set) => ({
@@ -93,11 +95,11 @@ export const useConfigStore = create<ConfigState>((set) => ({
   isOnline: true,
   isGPSEngineActive: true,
   isSensorsActive: true,
-  autoCache: true,
+  autoCache: localStorage.getItem('vian-maps-auto-cache') !== 'false',
   showCacheVis: false,
   eraseRadius: 50,
   activeTagFilters: ['all'],
-  theme: 'light',
+  theme: localStorage.getItem('vian-maps-theme') as 'light' | 'dark' || 'light',
   eraserMode: 'brush',
   isEraserArmed: false,
   activeTool: null,
@@ -110,16 +112,23 @@ export const useConfigStore = create<ConfigState>((set) => ({
   selectedTiles: [],
   performanceMode: 'low',
   deepDelete: false,
+  isHudFolded: localStorage.getItem('vian-maps-hud-folded') !== 'false',
 
   setActiveLayer: (activeLayerId) => set({ activeLayerId }),
   setOnline: (isOnline) => set({ isOnline }),
   setGPSEngine: (isGPSEngineActive) => set({ isGPSEngineActive }),
   setSensors: (isSensorsActive) => set({ isSensorsActive }),
-  setAutoCache: (autoCache) => set({ autoCache }),
+  setAutoCache: (autoCache) => {
+    localStorage.setItem('vian-maps-auto-cache', String(autoCache));
+    set({ autoCache });
+  },
   setShowCacheVis: (showCacheVis) => set({ showCacheVis }),
   setEraseRadius: (eraseRadius) => set({ eraseRadius }),
   setTagFilters: (activeTagFilters) => set({ activeTagFilters }),
-  setTheme: (theme) => set({ theme }),
+  setTheme: (theme) => {
+    localStorage.setItem('vian-maps-theme', theme);
+    set({ theme });
+  },
   setEraserMode: (eraserMode) => set({ eraserMode }),
   setEraserArmed: (isEraserArmed) => set({ isEraserArmed }),
   setActiveTool: (activeTool) => set({ activeTool }),
@@ -132,4 +141,8 @@ export const useConfigStore = create<ConfigState>((set) => ({
   setSelectedTiles: (selectedTiles) => set({ selectedTiles }),
   setPerformanceMode: (performanceMode) => set({ performanceMode }),
   setDeepDelete: (deepDelete) => set({ deepDelete }),
+  setHudFolded: (isHudFolded) => {
+    localStorage.setItem('vian-maps-hud-folded', String(isHudFolded));
+    set({ isHudFolded });
+  },
 }));

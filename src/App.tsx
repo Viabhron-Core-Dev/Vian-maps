@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import MapComponent from './components/MapComponent';
 import Panel from './components/UI/Panel';
-import { Layers, Navigation, Bookmark, Wrench, Settings, Search, Map as MapIcon, Signal, SignalLow, Ruler, Zap, Menu, X, Download, Eraser, Hash, Circle, Compass, Plus, Minus, Cloud, CloudOff, Wifi, WifiOff, Locate, LocateFixed, LocateOff, Trash2, RefreshCw, Activity, Share2 } from 'lucide-react';
+import { Layers, Navigation, Bookmark, Wrench, Settings, Search, Map as MapIcon, Signal, SignalLow, Ruler, Zap, Menu, X, Download, Eraser, Hash, Circle, Compass, Plus, Minus, Cloud, CloudOff, Wifi, WifiOff, Locate, LocateFixed, LocateOff, Trash2, RefreshCw, Activity, Share2, ChevronUp, ChevronDown } from 'lucide-react';
 import { App as CapApp } from '@capacitor/app';
+import { Toast } from '@capacitor/toast';
 import { useConfigStore, useGPSStore, useMapStore } from './lib/store';
 import { MAP_LAYERS, OfflineTileLayer } from './lib/OfflineLayer';
 import { toDMS, getMapScaleLabel, getMetersPerPixel } from './lib/utils';
@@ -11,8 +12,11 @@ import BookmarkManager from './components/BookmarkManager';
 import SettingsPanel from './components/SettingsPanel';
 import MiniLayerManagerPanel from './components/MiniLayerManager';
 import SensorDashboard from './components/SensorDashboard';
+import SearchAndRouting from './components/SearchAndRouting';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from './lib/db';
+
+import { Geolocation } from '@capacitor/geolocation';
 
 const App: React.FC = () => {
   const [activePanel, setActivePanel] = useState<string | null>(null);
@@ -45,7 +49,9 @@ const App: React.FC = () => {
     performanceMode,
     setPerformanceMode,
     deepDelete,
-    setDeepDelete
+    setDeepDelete,
+    isHudFolded,
+    setHudFolded
   } = useConfigStore();
   const { isTracking, setTracking, position, speed, accuracy, altitude, heading } = useGPSStore();
   const map = useMapStore(s => s.map);
@@ -55,6 +61,36 @@ const App: React.FC = () => {
   const [showCopied, setShowCopied] = useState(false);
   const [showRefreshPulse, setShowRefreshPulse] = useState(false);
   const [isSensorDashboardOpen, setSensorDashboardOpen] = useState(false);
+
+  useEffect(() => {
+    let lastBackPress = 0;
+    const backButtonListener = CapApp.addListener('backButton', async (data) => {
+      if (activePanel) {
+        setActivePanel(null);
+        return;
+      }
+
+      if (activeTool) {
+        setActiveTool(null);
+        return;
+      }
+
+      const currentTime = new Date().getTime();
+      if (currentTime - lastBackPress < 2000) {
+        CapApp.exitApp();
+      } else {
+        lastBackPress = currentTime;
+        await Toast.show({
+          text: 'Press back again to exit',
+          duration: 'short'
+        });
+      }
+    });
+
+    return () => {
+      backButtonListener.then(l => l.remove());
+    };
+  }, [activePanel, activeTool]);
 
   useEffect(() => {
     // Handle Shared Coordinates (PWA Deep Linking)
@@ -180,30 +216,41 @@ const App: React.FC = () => {
   }, [map]);
 
   useEffect(() => {
-    let watchId: number | null = null;
+    let watchId: string | null = null;
     
-    if (isTracking && isGPSEngineActive) {
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          useGPSStore.getState().setPosition([pos.coords.latitude, pos.coords.longitude]);
-          useGPSStore.getState().setMetrics({
-            accuracy: pos.coords.accuracy,
-            speed: pos.coords.speed,
-            heading: pos.coords.heading,
-            altitude: pos.coords.altitude,
-          });
-        },
-        (err) => console.error(err),
-        { 
-          enableHighAccuracy: positionMode === 'gps',
-          timeout: 10000,
-          maximumAge: 0
+    const startWatching = async () => {
+      if (isTracking && isGPSEngineActive) {
+        try {
+          watchId = await Geolocation.watchPosition(
+            { 
+              enableHighAccuracy: positionMode === 'gps',
+              timeout: 10000,
+              maximumAge: 0
+            },
+            (pos) => {
+              if (pos) {
+                useGPSStore.getState().setPosition([pos.coords.latitude, pos.coords.longitude]);
+                useGPSStore.getState().setMetrics({
+                  accuracy: pos.coords.accuracy,
+                  speed: pos.coords.speed || 0,
+                  heading: pos.coords.heading || 0,
+                  altitude: pos.coords.altitude || 0,
+                });
+              }
+            }
+          );
+        } catch (err) {
+          console.error('Geolocation error:', err);
         }
-      );
-    }
+      }
+    };
+
+    startWatching();
 
     return () => {
-      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      if (watchId !== null) {
+        Geolocation.clearWatch({ id: watchId });
+      }
     };
   }, [isTracking, isGPSEngineActive, positionMode]);
 
@@ -263,36 +310,6 @@ const App: React.FC = () => {
                        </div>
                     </button>
                   </div>
-
-                  <button 
-                    onClick={() => {
-                      if (position) {
-                        const text = coordMode === 'dms' 
-                          ? `${toDMS(position[0], true)} ${toDMS(position[1], false)}`
-                          : `${position[0].toFixed(6)}, ${position[1].toFixed(6)}`;
-                        navigator.clipboard.writeText(text);
-                        setShowCopied(true);
-                        setTimeout(() => setShowCopied(false), 2000);
-                        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(100);
-                      } else {
-                        setShowCopied(true);
-                        setTimeout(() => setShowCopied(false), 2000);
-                        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([50, 50, 50]);
-                      }
-                    }}
-                    className={`white-glass w-9 h-9 rounded-lg flex items-center justify-center active:scale-95 transition-transform ${showCopied ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}`}
-                  >
-                    <Bookmark className={`w-5 h-5 transition-colors ${showCopied ? 'text-blue-600' : 'text-zinc-600 dark:text-zinc-300'}`} strokeWidth={2.5} />
-                    {showCopied && (
-                     <motion.div 
-                       initial={{ opacity: 0, x: 10 }}
-                       animate={{ opacity: 1, x: 0 }}
-                       className="absolute -right-16 top-1 text-[8px] bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 px-2 py-0.5 rounded font-black whitespace-nowrap shadow-xl"
-                     >
-                       {position ? 'COPIED' : 'NO FIX'}
-                     </motion.div>
-                    )}
-                  </button>
               </div>
             )}
 
@@ -447,31 +464,46 @@ const App: React.FC = () => {
 
             {/* Scale & Mission Detail Overlay */}
             {!isMeasureActive && !isEraserActive && (
-              <div className="white-glass px-3 py-2 rounded-lg flex flex-col gap-2 pointer-events-auto w-fit min-w-[160px]">
+              <div className="white-glass px-3 py-2 rounded-lg flex flex-col pointer-events-auto w-fit min-w-[170px] transition-all duration-300 overflow-hidden">
                {/* Center HUD */}
                <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
                   <div className="flex flex-col gap-0.5 cursor-pointer" onClick={() => setCoordMode(coordMode === 'dms' ? 'decimal' : 'dms')}>
                     <span className="text-[7px] font-black text-zinc-400 uppercase tracking-widest">Map Center</span>
                     <span className="text-[10px] font-mono font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
-                      {coordMode === 'dms' ? toDMS(center.lat, center.lng) : `${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`}
+                      {coordMode === 'dms' 
+                        ? `${toDMS(center.lat, true)} ${toDMS(center.lng, false)}` 
+                        : `${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`}
                     </span>
                   </div>
-                  <button 
-                    onClick={shareCoords}
-                    className="p-1 text-zinc-400 hover:text-blue-500 transition-colors"
-                    title="Share Center"
-                  >
-                    <Share2 className="w-3 h-3" strokeWidth={3} />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    {!isOnline && (
+                      <div className="p-1 text-red-500 animate-pulse bg-red-500/10 rounded" title="NO NETWORK SIGNAL">
+                        <SignalLow className="w-3.5 h-3.5" strokeWidth={3} />
+                      </div>
+                    )}
+                    <button 
+                      onClick={() => setHudFolded(!isHudFolded)}
+                      className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                    >
+                      {isHudFolded ? <ChevronDown className="w-3.5 h-3.5" strokeWidth={3} /> : <ChevronUp className="w-3.5 h-3.5" strokeWidth={3} />}
+                    </button>
+                    <button 
+                      onClick={shareCoords}
+                      className="p-1 text-zinc-400 hover:text-blue-500 transition-colors"
+                      title="Share Center"
+                    >
+                      <Share2 className="w-3 h-3" strokeWidth={3} />
+                    </button>
+                  </div>
                </div>
 
-               <div className="flex items-center justify-between gap-4">
+               <div className="flex items-center justify-between gap-4 pt-1.5 pb-1.5">
                   <button 
                     onClick={() => setActivePanel('layers')}
                     className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
                   >
                     <MapIcon className="w-4 h-4 text-zinc-900 dark:text-zinc-100" strokeWidth={2.5} />
-                    <span className="text-[10px] font-black tactical-font text-zinc-900 dark:text-zinc-100">
+                    <span className="text-[10px] font-black tactical-font text-zinc-900 dark:text-zinc-100 uppercase">
                       {getMapScaleLabel(currentZoom)}
                     </span>
                   </button>
@@ -480,7 +512,7 @@ const App: React.FC = () => {
                   </div>
                </div>
                
-               <div className="flex flex-col gap-1">
+               <div className="flex flex-col gap-1 mb-2">
                   <div className="h-[2px] bg-zinc-200 dark:bg-zinc-800 w-full relative">
                     <div 
                       className="h-full bg-zinc-900 dark:bg-zinc-100 relative scale-line transition-all duration-300"
@@ -493,25 +525,41 @@ const App: React.FC = () => {
                   </div>
                </div>
 
-               {/* Telemetry Inline */}
-               <div className="flex items-center gap-2.5 pt-1 border-t border-zinc-100 dark:border-zinc-800 flex-wrap">
-                  <div className="flex items-baseline gap-0.5">
-                    <span className="text-[9px] font-black tactical-font text-zinc-900 dark:text-zinc-100">{speed ? (speed * 3.6).toFixed(1) : '0.0'}</span>
-                    <span className="text-[6px] text-zinc-400 font-bold uppercase tracking-tighter text-zinc-500">kmh</span>
-                  </div>
-                  <div className="flex items-baseline gap-0.5">
-                    <span className="text-[9px] font-black tactical-font text-zinc-900 dark:text-zinc-100">{accuracy ? accuracy.toFixed(0) : '--'}</span>
-                    <span className="text-[6px] text-zinc-400 font-bold uppercase tracking-tighter text-zinc-500">acc</span>
-                  </div>
-                  <div className="flex items-baseline gap-0.5">
-                    <span className="text-[9px] font-black tactical-font text-zinc-900 dark:text-zinc-100">{altitude ? altitude.toFixed(0) : '--'}</span>
-                    <span className="text-[6px] text-zinc-400 font-bold uppercase tracking-tighter text-zinc-500">alt</span>
-                  </div>
-                  <div className="flex items-baseline gap-0.5">
-                    <span className="text-[9px] font-black tactical-font text-zinc-900 dark:text-zinc-100">{heading ? heading.toFixed(0) : '--'}</span>
-                    <span className="text-[6px] text-zinc-400 font-bold uppercase tracking-tighter text-zinc-500">hdg</span>
-                  </div>
-               </div>
+               {/* Telemetry Row - Foldable */}
+               {!isHudFolded && (
+                 <motion.div 
+                   initial={{ height: 0, opacity: 0 }}
+                   animate={{ height: 'auto', opacity: 1 }}
+                   exit={{ height: 0, opacity: 0 }}
+                   className="flex flex-col gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800"
+                 >
+                   <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex items-baseline gap-0.5">
+                        <span className="text-[9px] font-black tactical-font text-zinc-900 dark:text-zinc-100">{speed ? (speed * 3.6).toFixed(1) : '0.0'}</span>
+                        <span className="text-[6px] text-zinc-400 font-bold uppercase tracking-tighter">kmh</span>
+                      </div>
+                      <div className="flex items-baseline gap-0.5">
+                        <span className="text-[9px] font-black tactical-font text-zinc-900 dark:text-zinc-100">{accuracy ? accuracy.toFixed(0) : '--'}</span>
+                        <span className="text-[6px] text-zinc-400 font-bold uppercase tracking-tighter">acc</span>
+                      </div>
+                      <div className="flex items-baseline gap-0.5">
+                        <span className="text-[9px] font-black tactical-font text-zinc-900 dark:text-zinc-100">{altitude ? altitude.toFixed(0) : '--'}</span>
+                        <span className="text-[6px] text-zinc-400 font-bold uppercase tracking-tighter">alt</span>
+                      </div>
+                      <div className="flex items-baseline gap-0.5">
+                        <span className="text-[9px] font-black tactical-font text-zinc-900 dark:text-zinc-100">{heading ? heading.toFixed(0) : '--'}</span>
+                        <span className="text-[6px] text-zinc-400 font-bold uppercase tracking-tighter">hdg</span>
+                      </div>
+                   </div>
+                   
+                   {!isOnline && (
+                     <div className="flex items-center gap-2 px-2 py-1 bg-red-500/10 rounded-md border border-red-500/20">
+                        <Signal className="w-3 h-3 text-red-500 animate-pulse" />
+                        <span className="text-[8px] font-black text-red-600 uppercase tracking-widest">Signal Lost / Offline</span>
+                     </div>
+                   )}
+                 </motion.div>
+               )}
             </div>
           )}
         </motion.div>
@@ -612,7 +660,15 @@ const App: React.FC = () => {
            }`}
            title={`Positioning: ${!isTracking ? 'OFF' : positionMode.toUpperCase()}`}
          >
-           {!isTracking ? <LocateOff className="w-5 h-5" strokeWidth={3} /> : positionMode === 'gps' ? <LocateFixed className="w-5 h-5" strokeWidth={3} /> : <Locate className="w-5 h-5" strokeWidth={3} />}
+           <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" className="mx-auto">
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="3" fill={isTracking ? 'currentColor' : 'none'} />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              {!isTracking && <line x1="1" y1="1" x2="23" y2="23" opacity="0.8" />}
+            </svg>
          </button>
 
          {/* Zoom Pack - White Style */}
@@ -719,39 +775,42 @@ const App: React.FC = () => {
                   )}
 
                   {activePanel === 'tools' && (
-                    <div className="flex flex-col gap-1">
-                      <button
-                        onClick={() => {
-                          const newState = activeTool === 'eraser' ? null : 'eraser';
-                          setActiveTool(newState);
-                          if (newState === 'eraser') setActivePanel(null);
-                        }}
-                        className={`w-full px-3 py-2 text-left text-[10px] font-bold rounded-md flex items-center justify-between ${
-                          activeTool === 'eraser' ? 'bg-red-600 text-white' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Eraser className="w-3.5 h-3.5" />
-                          <span>ERASER</span>
-                        </div>
-                        {activeTool === 'eraser' && <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
-                      </button>
-                      <button
-                        onClick={() => {
-                          const newState = activeTool === 'measure' ? null : 'measure';
-                          setActiveTool(newState);
-                          if (newState === 'measure') setActivePanel(null);
-                        }}
-                        className={`w-full px-3 py-2 text-left text-[10px] font-bold rounded-md flex items-center justify-between ${
-                          activeTool === 'measure' ? 'bg-amber-500 text-zinc-950' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Ruler className="w-3.5 h-3.5" />
-                          <span>RULER</span>
-                        </div>
-                        {activeTool === 'measure' && <div className="w-1.5 h-1.5 rounded-full bg-zinc-950 animate-pulse" />}
-                      </button>
+                    <div className="flex flex-col gap-3">
+                      <SearchAndRouting />
+                      <div className="flex flex-col gap-1 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                        <button
+                          onClick={() => {
+                            const newState = activeTool === 'eraser' ? null : 'eraser';
+                            setActiveTool(newState);
+                            if (newState === 'eraser') setActivePanel(null);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-[10px] font-bold rounded-md flex items-center justify-between ${
+                            activeTool === 'eraser' ? 'bg-red-600 text-white' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Eraser className="w-3.5 h-3.5" />
+                            <span>ERASER</span>
+                          </div>
+                          {activeTool === 'eraser' && <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newState = activeTool === 'measure' ? null : 'measure';
+                            setActiveTool(newState);
+                            if (newState === 'measure') setActivePanel(null);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-[10px] font-bold rounded-md flex items-center justify-between ${
+                            activeTool === 'measure' ? 'bg-amber-500 text-zinc-950' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Ruler className="w-3.5 h-3.5" />
+                            <span>RULER</span>
+                          </div>
+                          {activeTool === 'measure' && <div className="w-1.5 h-1.5 rounded-full bg-zinc-950 animate-pulse" />}
+                        </button>
+                      </div>
                       <div className="pt-1 border-t border-zinc-100 dark:border-zinc-800">
                         <MiniLayerManagerPanel />
                       </div>
