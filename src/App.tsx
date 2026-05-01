@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MapComponent from './components/MapComponent';
 import Panel from './components/UI/Panel';
-import { Layers, Navigation, Bookmark, Wrench, Settings, Search, Map as MapIcon, Signal, SignalLow, Ruler, Zap, Menu, X, Download, Eraser, Hash, Circle, Compass, Plus, Minus, Cloud, CloudOff, Wifi, WifiOff, Locate, LocateFixed, LocateOff, Trash2, RefreshCw, Activity, Share2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Layers, Navigation, Bookmark, Wrench, Settings, Search, Map as MapIcon, Signal, SignalLow, Ruler, Zap, Menu, X, Download, Eraser, Hash, Circle, Compass, Plus, Minus, Cloud, CloudOff, Wifi, WifiOff, Locate, LocateFixed, LocateOff, Trash2, RefreshCw, Activity, Share2, ChevronUp, ChevronDown, Radio } from 'lucide-react';
 import { App as CapApp } from '@capacitor/app';
 import { Toast } from '@capacitor/toast';
 import { useConfigStore, useGPSStore, useMapStore } from './lib/store';
@@ -13,6 +13,7 @@ import SettingsPanel from './components/SettingsPanel';
 import MiniLayerManagerPanel from './components/MiniLayerManager';
 import SensorDashboard from './components/SensorDashboard';
 import SearchAndRouting from './components/SearchAndRouting';
+import NetworkTester from './components/NetworkTester';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from './lib/db';
 
@@ -690,6 +691,11 @@ const App: React.FC = () => {
 
       <SensorDashboard isOpen={isSensorDashboardOpen} onClose={() => setSensorDashboardOpen(false)} />
 
+      <NetworkTester 
+        isActive={activeTool === 'network'} 
+        onClose={() => setActiveTool(null)} 
+      />
+
       {/* Primary Navigation Console - Left Aligned */}
       <AnimatePresence>
         {!isAnyToolActive && (
@@ -780,6 +786,38 @@ const App: React.FC = () => {
                       <div className="flex flex-col gap-1 pt-2 border-t border-zinc-100 dark:border-zinc-800">
                         <button
                           onClick={() => {
+                            const newState = activeTool === 'radar' ? null : 'radar';
+                            setActiveTool(newState);
+                            if (newState === 'radar') setActivePanel(null);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-[10px] font-bold rounded-md flex items-center justify-between ${
+                            activeTool === 'radar' ? 'bg-blue-600 text-white' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Radio className="w-3.5 h-3.5" />
+                            <span>SIGNAL RADAR</span>
+                          </div>
+                          {activeTool === 'radar' && <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newState = activeTool === 'network' ? null : 'network';
+                            setActiveTool(newState);
+                            if (newState === 'network') setActivePanel(null);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-[10px] font-bold rounded-md flex items-center justify-between ${
+                            activeTool === 'network' ? 'bg-blue-600 text-white' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Zap className="w-3.5 h-3.5" />
+                            <span>NET ANALYSIS</span>
+                          </div>
+                          {activeTool === 'network' && <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                        </button>
+                        <button
+                          onClick={() => {
                             const newState = activeTool === 'eraser' ? null : 'eraser';
                             setActiveTool(newState);
                             if (newState === 'eraser') setActivePanel(null);
@@ -809,6 +847,25 @@ const App: React.FC = () => {
                             <span>RULER</span>
                           </div>
                           {activeTool === 'measure' && <div className="w-1.5 h-1.5 rounded-full bg-zinc-950 animate-pulse" />}
+                        </button>
+                      </div>
+                      <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                        <button
+                          onClick={() => {
+                            const showCacheVis = useConfigStore.getState().showCacheVis;
+                            useConfigStore.getState().setShowCacheVis(!showCacheVis);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-[10px] font-bold rounded-md flex items-center justify-between ${
+                            useConfigStore.getState().showCacheVis ? 'bg-blue-900/40 text-blue-400' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <MapIcon className="w-3.5 h-3.5" />
+                            <span>OFFLINE DATA DENSITY</span>
+                          </div>
+                          <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${useConfigStore.getState().showCacheVis ? 'bg-blue-600' : 'bg-zinc-300 dark:bg-zinc-700'}`}>
+                            <div className={`w-3 h-3 rounded-full bg-white transition-transform ${useConfigStore.getState().showCacheVis ? 'translate-x-4' : 'translate-x-0'}`} />
+                          </div>
                         </button>
                       </div>
                       <div className="pt-1 border-t border-zinc-100 dark:border-zinc-800">

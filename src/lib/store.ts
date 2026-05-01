@@ -49,6 +49,9 @@ interface ConfigState {
   isSensorsActive: boolean;
   autoCache: boolean;
   showCacheVis: boolean;
+  cacheMaxTiles: number;
+  cacheMaxAgeDays: number;
+  cacheAutoClean: boolean;
   eraseRadius: number;
   activeTagFilters: string[];
   theme: 'light' | 'dark';
@@ -72,6 +75,9 @@ interface ConfigState {
   setSensors: (active: boolean) => void;
   setAutoCache: (auto: boolean) => void;
   setShowCacheVis: (show: boolean) => void;
+  setCacheMaxTiles: (tiles: number) => void;
+  setCacheMaxAgeDays: (days: number) => void;
+  setCacheAutoClean: (auto: boolean) => void;
   setEraseRadius: (radius: number) => void;
   setTagFilters: (filters: string[]) => void;
   setTheme: (theme: 'light' | 'dark') => void;
@@ -97,6 +103,9 @@ export const useConfigStore = create<ConfigState>((set) => ({
   isSensorsActive: true,
   autoCache: localStorage.getItem('vian-maps-auto-cache') !== 'false',
   showCacheVis: false,
+  cacheMaxTiles: Number(localStorage.getItem('vian-maps-cache-limit') || 5000),
+  cacheMaxAgeDays: Number(localStorage.getItem('vian-maps-cache-age') || 30),
+  cacheAutoClean: localStorage.getItem('vian-maps-cache-autoclean') !== 'false',
   eraseRadius: 50,
   activeTagFilters: ['all'],
   theme: localStorage.getItem('vian-maps-theme') as 'light' | 'dark' || 'light',
@@ -123,6 +132,18 @@ export const useConfigStore = create<ConfigState>((set) => ({
     set({ autoCache });
   },
   setShowCacheVis: (showCacheVis) => set({ showCacheVis }),
+  setCacheMaxTiles: (cacheMaxTiles) => {
+    localStorage.setItem('vian-maps-cache-limit', String(cacheMaxTiles));
+    set({ cacheMaxTiles });
+  },
+  setCacheMaxAgeDays: (cacheMaxAgeDays) => {
+    localStorage.setItem('vian-maps-cache-age', String(cacheMaxAgeDays));
+    set({ cacheMaxAgeDays });
+  },
+  setCacheAutoClean: (cacheAutoClean) => {
+    localStorage.setItem('vian-maps-cache-autoclean', String(cacheAutoClean));
+    set({ cacheAutoClean });
+  },
   setEraseRadius: (eraseRadius) => set({ eraseRadius }),
   setTagFilters: (activeTagFilters) => set({ activeTagFilters }),
   setTheme: (theme) => {

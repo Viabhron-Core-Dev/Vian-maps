@@ -14,10 +14,28 @@ const SettingsPanel: React.FC = () => {
     isGPSEngineActive, setGPSEngine,
     isSensorsActive, setSensors,
     positionMode, setPositionMode,
-    performanceMode, setPerformanceMode
+    performanceMode, setPerformanceMode,
+    cacheMaxTiles, setCacheMaxTiles,
+    cacheMaxAgeDays, setCacheMaxAgeDays,
+    cacheAutoClean, setCacheAutoClean
   } = useConfigStore();
   const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cacheSize, setCacheSize] = useState<string | null>(null);
+
+  // Load cache size
+  React.useEffect(() => {
+    const loadSize = async () => {
+      let size = 0;
+      await db.tiles.each(t => size += t.data.size);
+      if (size > 1024 * 1024 * 1024) {
+        setCacheSize((size / (1024 * 1024 * 1024)).toFixed(2) + ' GB');
+      } else {
+        setCacheSize((size / (1024 * 1024)).toFixed(1) + ' MB');
+      }
+    };
+    loadSize();
+  }, []);
 
   const clearAllTiles = async () => {
     if (confirm('Are you sure? This will delete ALL cached map tiles for all layers.')) {
@@ -187,6 +205,7 @@ const SettingsPanel: React.FC = () => {
           { label: 'AUTO-CACHE', icon: Zap, value: autoCache, toggle: () => setAutoCache(!autoCache), color: 'text-blue-500' },
           { label: 'CACHE VISUAL', icon: Eye, value: showCacheVis, toggle: () => setShowCacheVis(!showCacheVis), color: 'text-purple-500' },
           { label: 'HIGH PERF', icon: Activity, value: performanceMode === 'high', toggle: () => setPerformanceMode(performanceMode === 'high' ? 'low' : 'high'), color: 'text-orange-500' },
+          { label: 'AUTO CLEAN', icon: Trash2, value: cacheAutoClean, toggle: () => setCacheAutoClean(!cacheAutoClean), color: 'text-red-500' },
         ].map(item => (
           <button
             key={item.label}
@@ -202,6 +221,31 @@ const SettingsPanel: React.FC = () => {
             </div>
           </button>
         ))}
+      </div>
+
+      {/* Cache Limits */}
+      <div className="flex flex-col gap-2 mt-1 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Cache Quota: {cacheMaxTiles} Tiles</span>
+            {cacheSize && <span className="text-[8px] font-bold text-blue-500">{cacheSize}</span>}
+          </div>
+          <input 
+            type="range" min="1000" max="25000" step="1000" 
+            value={cacheMaxTiles} 
+            onChange={(e) => setCacheMaxTiles(parseInt(e.target.value))}
+            className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+           <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Expiration: {cacheMaxAgeDays} Days</span>
+           <input 
+            type="range" min="1" max="90" step="1" 
+            value={cacheMaxAgeDays} 
+            onChange={(e) => setCacheMaxAgeDays(parseInt(e.target.value))}
+            className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+        </div>
       </div>
 
       {/* Bundle Tools */}

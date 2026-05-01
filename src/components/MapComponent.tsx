@@ -5,6 +5,7 @@ import { MAP_LAYERS, OfflineTileLayer } from '../lib/OfflineLayer';
 import { useConfigStore, useGPSStore, useMapStore } from '../lib/store';
 import { db } from '../lib/db';
 import { Compass } from 'lucide-react';
+import { CacheManager } from '../lib/CacheManager';
 
 const MapInstanceCapture: React.FC = () => {
   const map = useMap();
@@ -12,6 +13,8 @@ const MapInstanceCapture: React.FC = () => {
 
   useEffect(() => {
     setMap(map);
+    // Trigger lazy cleanup on startup
+    CacheManager.performCleanup();
     return () => setMap(null);
   }, [map, setMap]);
 
@@ -360,9 +363,11 @@ const TacticalPanningHandler: React.FC = () => {
 
 import MeasurementTool from './MeasurementTool';
 import EraserTool from './EraserTool';
+import SignalRadar from './SignalRadar';
 import TagOverlay from './TagOverlay';
 import MiniLayerOverlay from './MiniLayerOverlay';
 import MapNavigationOverlay from './MapNavigationOverlay';
+import CacheDensityOverlay from './CacheDensityOverlay';
 
 const RefreshListener: React.FC = () => {
   const map = useMap();
@@ -447,6 +452,8 @@ const MapComponent: React.FC = () => {
         <TagOverlay />
         <MiniLayerOverlay />
         <MapNavigationOverlay />
+        <CacheDensityOverlay />
+        <SignalRadar isActive={activeTool === 'radar'} />
         <MeasurementTool isActive={activeTool === 'measure'} />
         <EraserTool isActive={activeTool === 'eraser'} />
       </MapContainer>
