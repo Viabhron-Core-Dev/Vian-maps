@@ -29,7 +29,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -53,7 +53,9 @@ jobs:
           echo "Generating app assets..."
           # Ensure assets exist before generation
           if [ -f "assets/icon.png" ]; then
-            npx @capacitor/assets generate --android || echo "Asset generation failed, continuing..."
+            # We use --icon to specify the icon source if available, 
+            # but default behavior should pick up icon.png
+            npx @capacitor/assets generate --android --assetPath assets || echo "Asset generation failed, continuing..."
           fi
           
           node patch-android-permissions.js
