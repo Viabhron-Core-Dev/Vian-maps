@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MapComponent from './components/MapComponent';
 import Panel from './components/UI/Panel';
-import { Layers, Navigation, Bookmark, Wrench, Settings, Search, Map as MapIcon, Signal, SignalLow, Ruler, Zap, Menu, X, Download, Eraser, Hash, Circle, Compass, Plus, Minus, Cloud, CloudOff, Wifi, WifiOff, Locate, LocateFixed, LocateOff, Trash2, RefreshCw, Activity, Share2, ChevronUp, ChevronDown, Radio } from 'lucide-react';
+import { Layers, Navigation, Bookmark, Wrench, Settings, Search, Map as MapIcon, Signal, SignalLow, Ruler, Zap, Menu, X, Download, Eraser, Hash, Circle, Compass, Plus, Minus, Cloud, CloudOff, Wifi, WifiOff, Locate, LocateFixed, LocateOff, Trash2, RefreshCw, Activity, Share2, ChevronUp, ChevronDown, Radio, Database } from 'lucide-react';
 import { App as CapApp } from '@capacitor/app';
 import { Toast } from '@capacitor/toast';
 import { useConfigStore, useGPSStore, useMapStore } from './lib/store';
@@ -58,6 +58,7 @@ const App: React.FC = () => {
   const map = useMapStore(s => s.map);
   const [currentZoom, setCurrentZoom] = useState(13);
   const [center, setCenter] = useState<{lat: number, lng: number}>({ lat: 0, lng: 0 });
+  const [tileCount, setTileCount] = useState<number>(0);
   const [coordMode, setCoordMode] = useState<'dms' | 'decimal'>('dms');
   const [showCopied, setShowCopied] = useState(false);
   const [showRefreshPulse, setShowRefreshPulse] = useState(false);
@@ -124,6 +125,40 @@ const App: React.FC = () => {
     CapApp.addListener('appUrlOpen', handleAppUrlOpen);
     return () => { CapApp.removeAllListeners(); };
   }, [map]);
+
+  useEffect(() => {
+    const updateTileCount = async () => {
+      try {
+        const count = await db.tiles.count();
+        setTileCount(count);
+      } catch (err) {
+        console.error('Failed to update tile count:', err);
+      }
+    };
+    
+    updateTileCount();
+    const interval = setInterval(updateTileCount, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!isOnline) return;
+    
+    const performLiveSync = async () => {
+      // Live Sync logic placeholder
+      try {
+        // This is where remote synchronization with a backend would occur
+        // e.g. checking for new mission data or syncing mission reports
+      } catch (err) {
+        console.error('Live Sync Error:', err);
+      }
+    };
+
+    const interval = setInterval(performLiveSync, 60000); // 1 minute interval
+    performLiveSync();
+    
+    return () => clearInterval(interval);
+  }, [isOnline]);
 
   const handleManualRefresh = () => {
     setShowRefreshPulse(true);
@@ -300,6 +335,14 @@ const App: React.FC = () => {
                       }}
                       className={`white-glass px-3 py-1.5 rounded-lg flex items-center gap-3 active:scale-95 transition-transform ${!position ? 'animate-pulse opacity-80' : ''}`}
                     >
+                      {/* Storage Pill Integration */}
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-900/10 dark:bg-zinc-100/10 rounded-full border border-zinc-900/5 dark:border-zinc-100/10 shadow-sm" id="storage-pill">
+                        <Database className="w-3 h-3 text-blue-500" strokeWidth={3} />
+                        <span className="text-[9px] font-black tabular-nums text-zinc-500 uppercase tracking-tighter">
+                          {tileCount.toLocaleString()} TILES
+                        </span>
+                      </div>
+
                        <div className="flex flex-col">
                           <div className={`text-[11px] font-black tactical-font transition-colors ${position ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-400 dark:text-zinc-500'}`}>
                             {position ? (
@@ -784,6 +827,17 @@ const App: React.FC = () => {
                     <div className="flex flex-col gap-3">
                       <SearchAndRouting />
                       <div className="flex flex-col gap-1 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                        <button
+                          onClick={() => {
+                            setActivePanel('bookmarks');
+                          }}
+                          className={`w-full px-3 py-2 text-left text-[10px] font-bold rounded-md flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Bookmark className="w-3.5 h-3.5 text-amber-500" />
+                            <span>POINTS / WAYPOINTS</span>
+                          </div>
+                        </button>
                         <button
                           onClick={() => {
                             const newState = activeTool === 'radar' ? null : 'radar';

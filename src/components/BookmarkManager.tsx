@@ -191,20 +191,31 @@ const BookmarkManager: React.FC = () => {
     setBookmarks(all);
   };
 
-  const addBookmark = async () => {
-    const coords = pendingBookmark ? [pendingBookmark.lat, pendingBookmark.lng] : position;
+  const addBookmark = async (isView?: boolean) => {
+    let coords: [number, number] | null = null;
+    let zoomValue: number | undefined = undefined;
+
+    if (isView && map) {
+      const center = map.getCenter();
+      coords = [center.lat, center.lng];
+      zoomValue = map.getZoom();
+    } else {
+      coords = pendingBookmark ? [pendingBookmark.lat, pendingBookmark.lng] : position;
+    }
+
     if (!coords || isNaN(coords[0]) || isNaN(coords[1])) {
       alert("Invalid location data. Cannot save bookmark.");
       return;
     }
 
-    const name = newBookmarkName.trim() || `Mark ${new Date().toLocaleTimeString()}`;
+    const name = newBookmarkName.trim() || (isView ? `View ${new Date().toLocaleTimeString()}` : `Mark ${new Date().toLocaleTimeString()}`);
     await db.bookmarks.add({
       name,
       lat: coords[0],
       lng: coords[1],
+      zoom: zoomValue,
       category: 'waypoint',
-      icon: selectedIcon,
+      icon: isView ? 'camera' : selectedIcon,
       note: newBookmarkNote,
       tags: newBookmarkTags || 'all',
       savedAt: Date.now()
@@ -248,9 +259,9 @@ const BookmarkManager: React.FC = () => {
     setLongPressedId(null);
   };
 
-  const teleport = (lat: number, lng: number) => {
+  const teleport = (lat: number, lng: number, zoom?: number) => {
     if (!map || isNaN(lat) || isNaN(lng)) return;
-    map.flyTo([lat, lng], 15, { duration: 1.5 });
+    map.flyTo([lat, lng], zoom || 15, { duration: 1.5 });
   };
 
   const handlePointerDown = (id: number) => {
@@ -455,14 +466,23 @@ const BookmarkManager: React.FC = () => {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-2"
           >
-            {/* The "PLUS" Button at the start of the list */}
-            <button 
-              onClick={() => setIsAdding(true)}
-              className="w-full h-16 rounded-xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-3 text-zinc-400 dark:text-zinc-500 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-500/5 transition-all mb-4"
-            >
-              <PlusSquare className="w-6 h-6" />
-              <span className="text-xs font-black uppercase tracking-widest">New Mission Placemark</span>
-            </button>
+            <div className="flex flex-col gap-2 mb-4">
+              <button 
+                onClick={() => setIsAdding(true)}
+                className="w-full h-12 rounded-xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-3 text-zinc-400 dark:text-zinc-500 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-500/5 transition-all"
+              >
+                <PlusSquare className="w-5 h-5" />
+                <span className="text-xs font-black uppercase tracking-widest">New Placemark</span>
+              </button>
+              
+              <button 
+                onClick={() => addBookmark(true)}
+                className="w-full h-12 rounded-xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-3 text-zinc-400 dark:text-zinc-500 hover:border-amber-500 hover:text-amber-500 hover:bg-amber-500/5 transition-all"
+              >
+                <Camera className="w-5 h-5" />
+                <span className="text-xs font-black uppercase tracking-widest">Save Current View</span>
+              </button>
+            </div>
 
             <AnimatePresence>
               {bookmarks.length === 0 ? (
@@ -476,7 +496,7 @@ const BookmarkManager: React.FC = () => {
                     return (
                       <div key={bm.id} className="relative group">
                         <motion.div 
-                          onClick={() => teleport(bm.lat, bm.lng)}
+                          onClick={() => teleport(bm.lat, bm.lng, bm.zoom)}
                           className={`flex items-center justify-between px-2 py-1.5 rounded-md border transition-all cursor-pointer ${
                             longPressedId === bm.id 
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 

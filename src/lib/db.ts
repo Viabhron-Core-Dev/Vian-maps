@@ -11,6 +11,7 @@ export interface Bookmark {
   name: string;
   lat: number;
   lng: number;
+  zoom?: number;
   category: 'favorite' | 'waypoint' | 'warning' | 'other' | 'route';
   icon?: string;
   tags?: string;

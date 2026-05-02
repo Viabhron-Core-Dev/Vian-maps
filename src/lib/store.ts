@@ -97,7 +97,7 @@ interface ConfigState {
 }
 
 export const useConfigStore = create<ConfigState>((set) => ({
-  activeLayerId: 'hybrid',
+  activeLayerId: 'blank',
   isOnline: true,
   isGPSEngineActive: true,
   isSensorsActive: true,

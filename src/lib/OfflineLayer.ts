@@ -37,6 +37,13 @@ export const MAP_LAYERS: Record<string, LayerDefinition> = {
     url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
     attribution: '© OpenTopoMap contributors',
     maxZoom: 17
+  },
+  blank: {
+    id: 'blank',
+    name: 'Blank Grid',
+    url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAAA1BMVEWAgICQ970KAAAAGUlEQVRoge3BAQ0AAADCoPdPbQ8HFAAAAAAA4GcgAAH9AAnkAAAAAElFTkSuQmCC',
+    attribution: '',
+    maxZoom: 20
   }
 };
 
