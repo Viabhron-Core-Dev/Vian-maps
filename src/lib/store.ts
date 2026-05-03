@@ -68,6 +68,7 @@ interface ConfigState {
   performanceMode: 'high' | 'low';
   deepDelete: boolean;
   isHudFolded: boolean;
+  networkProvider: string;
   
   setActiveLayer: (id: string) => void;
   setOnline: (online: boolean) => void;
@@ -94,6 +95,7 @@ interface ConfigState {
   setPerformanceMode: (mode: 'high' | 'low') => void;
   setDeepDelete: (deep: boolean) => void;
   setHudFolded: (folded: boolean) => void;
+  setNetworkProvider: (provider: string) => void;
 }
 
 export const useConfigStore = create<ConfigState>((set) => ({
@@ -122,6 +124,7 @@ export const useConfigStore = create<ConfigState>((set) => ({
   performanceMode: 'low',
   deepDelete: false,
   isHudFolded: localStorage.getItem('vian-maps-hud-folded') !== 'false',
+  networkProvider: localStorage.getItem('vian-maps-provider') || 'UNSPECIFIED',
 
   setActiveLayer: (activeLayerId) => set({ activeLayerId }),
   setOnline: (isOnline) => set({ isOnline }),
@@ -165,5 +168,9 @@ export const useConfigStore = create<ConfigState>((set) => ({
   setHudFolded: (isHudFolded) => {
     localStorage.setItem('vian-maps-hud-folded', String(isHudFolded));
     set({ isHudFolded });
+  },
+  setNetworkProvider: (networkProvider) => {
+    localStorage.setItem('vian-maps-provider', networkProvider);
+    set({ networkProvider });
   },
 }));

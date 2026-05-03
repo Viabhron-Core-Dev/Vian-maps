@@ -17,7 +17,8 @@ const SettingsPanel: React.FC = () => {
     performanceMode, setPerformanceMode,
     cacheMaxTiles, setCacheMaxTiles,
     cacheMaxAgeDays, setCacheMaxAgeDays,
-    cacheAutoClean, setCacheAutoClean
+    cacheAutoClean, setCacheAutoClean,
+    networkProvider, setNetworkProvider
   } = useConfigStore();
   const [archiveStatus, setArchiveStatus] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -196,6 +197,21 @@ const SettingsPanel: React.FC = () => {
             {m === 'gps' ? 'SATELLITE' : 'INTEGRATED'}
           </button>
         ))}
+      </div>
+
+      {/* Network Provider Input */}
+      <div className="flex flex-col gap-1 p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg mt-1">
+        <label className="text-[7.5px] font-black text-zinc-500 uppercase tracking-widest px-1 flex items-center gap-1.5">
+          <Signal className="w-2.5 h-2.5" />
+          Telecom Provider (SIM)
+        </label>
+        <input 
+          type="text"
+          value={networkProvider}
+          onChange={(e) => setNetworkProvider(e.target.value.toUpperCase())}
+          placeholder="e.g. JIO 5G, AIRTEL..."
+          className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1.5 text-[9px] font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500 uppercase"
+        />
       </div>
 
       {/* Network & Cache List */}

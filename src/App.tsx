@@ -52,7 +52,8 @@ const App: React.FC = () => {
     deepDelete,
     setDeepDelete,
     isHudFolded,
-    setHudFolded
+    setHudFolded,
+    networkProvider
   } = useConfigStore();
   const { isTracking, setTracking, position, speed, accuracy, altitude, heading } = useGPSStore();
   const map = useMapStore(s => s.map);
@@ -513,6 +514,11 @@ const App: React.FC = () => {
                <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
                   <div className="flex flex-col gap-0.5 cursor-pointer" onClick={() => setCoordMode(coordMode === 'dms' ? 'decimal' : 'dms')}>
                     <span className="text-[7px] font-black text-zinc-400 uppercase tracking-widest">Map Center</span>
+                    <div className="flex items-center gap-1.5 mb-1 bg-zinc-900/5 dark:bg-zinc-100/5 px-1 py-0.5 rounded-sm">
+                      <Radio className="w-2.5 h-2.5 text-blue-500" />
+                      <span className="text-[7px] font-black text-zinc-600 dark:text-zinc-400 uppercase tracking-tighter truncate max-w-[80px]">{networkProvider}</span>
+                      <div className={`w-1 h-1 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.5)]' : 'bg-red-500 animate-pulse'}`} />
+                    </div>
                     <span className="text-[10px] font-mono font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
                       {coordMode === 'dms' 
                         ? `${toDMS(center.lat, true)} ${toDMS(center.lng, false)}` 

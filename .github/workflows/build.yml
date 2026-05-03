@@ -53,9 +53,8 @@ jobs:
           echo "Generating app assets..."
           # Ensure assets exist before generation
           if [ -f "assets/icon.png" ]; then
-            # We use --icon to specify the icon source if available, 
-            # but default behavior should pick up icon.png
-            npx @capacitor/assets generate --android --assetPath assets || echo "Asset generation failed, continuing..."
+            # Use @capacitor/assets with specific flags for better reliability
+            npx @capacitor/assets generate --android --icon assets/icon.png --logo assets/icon.png || echo "Asset generation failed, continuing..."
           fi
           
           node patch-android-permissions.js
