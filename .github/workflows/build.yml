@@ -53,8 +53,11 @@ jobs:
           echo "Generating app assets..."
           # Ensure assets exist before generation
           if [ -f "assets/icon.png" ]; then
-            # Use @capacitor/assets with specific flags for better reliability
-            npx @capacitor/assets generate --android --icon assets/icon.png --logo assets/icon.png || echo "Asset generation failed, continuing..."
+            # Added --yes to prevent CI hanging, and removed the silent failure echo
+            npx --yes @capacitor/assets generate --android --icon assets/icon.png --logo assets/icon.png
+          else
+            echo "Error: assets/icon.png not found at the root of the repository!"
+            exit 1
           fi
           
           node patch-android-permissions.js
